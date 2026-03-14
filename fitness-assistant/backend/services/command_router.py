@@ -1,308 +1,363 @@
 """
-指令路由器
-解析用户输入的命令，分发到不同处理器
+指令路由器 v2
+
+设计理念：
+- /记录：结构化指令，规则解析，直接操作飞书表格
+- /llm：自由模式，LLM 自主决策调用什么 agent/skill
+- 其他指令：路由到特定 agent
+
+Agents:
+- trainer: 训练师（生成计划、分析记录）
+- rehab: 康复师（伤病建议、动作替代）
+- recorder: 记录员（写入飞书表格）
+- querier: 查询员（读取飞书表格）
 """
 
-from typing import Dict, Optional, Callable
-import re
+from typing import Dict, Optional, Callable, List
 from dataclasses import dataclass
+from enum import Enum
+import re
+
+
+class AgentType(Enum):
+    """Agent 类型"""
+    TRAINER = "trainer"      # 训练师：生成计划、分析趋势
+    REHAB = "rehab"          # 康复师：伤病建议、动作替代
+    RECORDER = "recorder"    # 记录员：写入飞书表格
+    QUERIER = "querier"      # 查询员：读取飞书表格
+    ROUTER = "router"        # 路由：LLM 自主决策
 
 
 @dataclass
-class CommandResult:
-    """指令解析结果"""
-    command: str          # /记录 /llm /今天练什么
-    args: list           # 位置参数
-    kwargs: dict         # 命名参数
-    raw_text: str        # 原始文本
-    is_command: bool     # 是否是指令格式
+class CommandContext:
+    """指令上下文"""
+    user_id: str
+    command: str
+    raw_input: str          # 原始输入
+    parsed_data: dict       # 解析后的数据
+    history: List[dict]     # 对话历史
+    feishu_token: dict      # 飞书 API token
+
+
+@dataclass
+class AgentResponse:
+    """Agent 响应"""
+    success: bool
+    message: str
+    data: Optional[dict]
+    actions: List[dict]     # 需要执行的动作（如写入飞书）
+
+
+class Agent:
+    """Agent 基类"""
+    def __init__(self, name: str, description: str):
+        self.name = name
+        self.description = description
+    
+    async def execute(self, context: CommandContext) -> AgentResponse:
+        raise NotImplementedError
+
+
+class RecorderAgent(Agent):
+    """
+    记录员 Agent
+    职责：将结构化数据写入飞书多维表格
+    """
+    def __init__(self):
+        super().__init__(
+            name="recorder",
+            description="训练记录员，负责将训练数据写入飞书表格"
+        )
+    
+    async def execute(self, context: CommandContext) -> AgentResponse:
+        data = context.parsed_data
+        
+        # TODO: 调用飞书 API 写入表格
+        # result = await feishu_api.append_record(data)
+        
+        return AgentResponse(
+            success=True,
+            message=f"✅ 已记录: {data.get('exercise')} {data.get('weight')}kg × {data.get('reps')}次 × {data.get('sets')}组",
+            data=data,
+            actions=[{"type": "feishu_write", "table": "training_logs", "data": data}]
+        )
+
+
+class LLMRouterAgent(Agent):
+    """
+    LLM 路由 Agent
+    职责：理解用户意图，自主决策调用其他 agents
+    
+    输入示例：
+    - "今天练胸，先用60kg卧推热身，然后正式组80kg做了8个"
+    - [图片] 训记截图
+    - "我肩膀有点疼，今天还能练推吗？"
+    - "看看我最近卧推的趋势"
+    
+    LLM 决策：
+    - 意图识别 → 调用 recorder/trainer/rehab/querier
+    - 参数提取 → 传递给具体 agent
+    - 或者直接回答（闲聊/建议）
+    """
+    def __init__(self):
+        super().__init__(
+            name="llm_router",
+            description="智能路由，理解复杂输入并决策调用其他 agents"
+        )
+    
+    async def execute(self, context: CommandContext) -> AgentResponse:
+        """
+        LLM 自主决策流程：
+        
+        1. 理解输入（可能是文字、图片、混合）
+        2. 意图识别
+        3. 决策：调用哪个 agent 或直接回答
+        4. 执行
+        """
+        
+        # TODO: 调用 LLM API 进行决策
+        # llm_response = await llm_client.chat(
+        #     system_prompt=ROUTER_PROMPT,
+        #     user_input=context.raw_input,
+        #     available_agents=[a.description for a in available_agents]
+        # )
+        
+        # 模拟 LLM 决策
+        text = context.raw_input.lower()
+        
+        if "肩" in text and ("疼" in text or "痛" in text):
+            # 伤病相关 → 康复师
+            return AgentResponse(
+                success=True,
+                message="🩺 检测到伤病描述，转接康复师...",
+                data={"route_to": "rehab", "input": text},
+                actions=[{"type": "delegate", "agent": "rehab", "context": context}]
+            )
+        
+        elif any(kw in text for kw in ["kg", "次", "组", "卧推", "深蹲"]):
+            # 训练记录 → 记录员
+            return AgentResponse(
+                success=True,
+                message="📝 检测到训练记录，正在解析...",
+                data={"route_to": "recorder", "input": text},
+                actions=[{"type": "delegate", "agent": "recorder", "context": context}]
+            )
+        
+        elif any(kw in text for kw in ["趋势", "查看", "历史"]):
+            # 查询 → 查询员
+            return AgentResponse(
+                success=True,
+                message="📊 正在查询训练记录...",
+                data={"route_to": "querier", "input": text},
+                actions=[{"type": "delegate", "agent": "querier", "context": context}]
+            )
+        
+        else:
+            # 默认 → 训练师给建议
+            return AgentResponse(
+                success=True,
+                message="🤖 收到！正在分析并给出建议...",
+                data={"route_to": "trainer", "input": text},
+                actions=[{"type": "delegate", "agent": "trainer", "context": context}]
+            )
 
 
 class CommandRouter:
-    """指令路由器"""
+    """
+    指令路由器
+    
+    简单指令 → 直接路由到对应 agent
+    复杂指令 → 交给 LLMRouter 自主决策
+    """
     
     def __init__(self):
-        self.handlers: Dict[str, Callable] = {}
+        self.agents: Dict[str, Agent] = {}
+        self._register_default_agents()
     
-    def register(self, command: str, handler: Callable):
-        """注册指令处理器"""
-        self.handlers[command] = handler
+    def _register_default_agents(self):
+        """注册默认 agents"""
+        self.register_agent(RecorderAgent())
+        self.register_agent(LLMRouterAgent())
+        # TODO: 注册 trainer, rehab, querier
     
-    def parse(self, text: str) -> CommandResult:
+    def register_agent(self, agent: Agent):
+        """注册 agent"""
+        self.agents[agent.name] = agent
+    
+    def parse_command(self, text: str) -> tuple:
         """
         解析指令
         
-        支持格式：
-        - /记录 卧推 60kg 10次 4组
-        - /记录 动作=卧推 重量=60kg 次数=10 组数=4
-        - /llm 今天练胸做了卧推和飞鸟
+        Returns: (command, args)
         """
         text = text.strip()
         
-        # 判断是否以 / 开头
         if not text.startswith('/'):
-            return CommandResult(
-                command="",
-                args=[],
-                kwargs={},
-                raw_text=text,
-                is_command=False
-            )
+            return (None, text)
         
-        # 分割命令和参数
         parts = text.split(maxsplit=1)
         command = parts[0].lower()
-        args_text = parts[1] if len(parts) > 1 else ""
+        args = parts[1] if len(parts) > 1 else ""
         
-        # 解析参数
-        args, kwargs = self._parse_args(args_text)
+        return (command, args)
+    
+    async def route(self, text: str, user_id: str = None) -> AgentResponse:
+        """
+        路由指令
         
-        return CommandResult(
-            command=command,
-            args=args,
-            kwargs=kwargs,
-            raw_text=text,
-            is_command=True
+        策略：
+        1. /记录 → 规则解析 → RecorderAgent
+        2. /llm → LLMRouterAgent（自主决策）
+        3. 其他特定指令 → 对应 agent
+        4. 非指令 → 提示使用 /记录 或 /llm
+        """
+        command, args = self.parse_command(text)
+        
+        context = CommandContext(
+            user_id=user_id or "anonymous",
+            command=command or "",
+            raw_input=text,
+            parsed_data={},
+            history=[],
+            feishu_token={}
         )
-    
-    def _parse_args(self, text: str) -> tuple:
-        """
-        解析参数
         
-        支持：
-        - 位置参数: 卧推 60kg 10次
-        - 键值对: 动作=卧推 重量=60kg
-        """
-        if not text:
-            return [], {}
+        # 指令路由
+        if command in ['/记录', '/record']:
+            # 结构化记录，规则解析
+            parsed = self._parse_record_args(args)
+            if not parsed:
+                return AgentResponse(
+                    success=False,
+                    message="格式错误。正确格式:\n/记录 动作 重量 次数 [组数]\n例: /记录 卧推 60kg 10次 4组",
+                    data=None,
+                    actions=[]
+                )
+            context.parsed_data = parsed
+            return await self.agents['recorder'].execute(context)
         
-        args = []
-        kwargs = {}
+        elif command in ['/llm', '/ai']:
+            # 自由模式，LLM 自主决策
+            context.raw_input = args
+            return await self.agents['llm_router'].execute(context)
         
-        # 先尝试匹配键值对
-        kv_pattern = r'(\w+)[=:：]\s*([^\s]+)'
-        kv_matches = re.findall(kv_pattern, text)
+        elif command in ['/今天练什么', '/today']:
+            # TODO: 调用 TrainerAgent
+            return AgentResponse(
+                success=True,
+                message="🎯 正在生成今日训练计划...",
+                data={},
+                actions=[]
+            )
         
-        if kv_matches:
-            # 键值对模式
-            for key, value in kv_matches:
-                kwargs[key] = value
-            # 剩余部分作为位置参数
-            remaining = re.sub(kv_pattern, '', text).strip()
-            if remaining:
-                args = remaining.split()
+        elif command in ['/查看', '/view']:
+            # TODO: 调用 QuerierAgent
+            return AgentResponse(
+                success=True,
+                message="📊 正在查询训练记录...",
+                data={},
+                actions=[]
+            )
+        
+        elif command in ['/帮助', '/help']:
+            return self._help_response()
+        
         else:
-            # 纯位置参数模式
-            args = text.split()
-        
-        return args, kwargs
+            # 非指令或未知指令
+            return AgentResponse(
+                success=False,
+                message="请输入指令:\n📌 /记录 动作 重量 次数 [组数] - 快速记录\n🤖 /llm 自然语言描述 - 智能记录\n/help - 查看全部指令",
+                data=None,
+                actions=[]
+            )
     
-    async def handle(self, text: str, user_id: str = None) -> dict:
+    def _parse_record_args(self, args: str) -> Optional[dict]:
         """
-        处理指令
-        
-        Returns:
-            {
-                "success": bool,
-                "type": "command" | "natural",
-                "command": str,
-                "result": dict,
-                "message": str
-            }
+        解析 /记录 参数
+        格式: 动作 重量 次数 [组数]
         """
-        parsed = self.parse(text)
+        if not args:
+            return None
         
-        if not parsed.is_command:
-            # 非指令，按自然语言处理
-            return {
-                "success": True,
-                "type": "natural",
-                "command": "",
-                "result": None,
-                "message": "非指令格式，建议用 /记录 或 /llm"
-            }
+        parts = args.split()
+        if len(parts) < 3:
+            return None
         
-        handler = self.handlers.get(parsed.command)
-        if not handler:
-            available = ", ".join(self.handlers.keys())
-            return {
-                "success": False,
-                "type": "command",
-                "command": parsed.command,
-                "result": None,
-                "message": f"未知指令: {parsed.command}\n可用指令: {available}"
-            }
+        exercise = parts[0]
         
-        # 调用处理器
-        result = await handler(parsed, user_id)
+        # 提取重量
+        weight_match = re.search(r'(\d+(?:\.\d+)?)', parts[1])
+        if not weight_match:
+            return None
+        weight = float(weight_match.group(1))
+        
+        # 提取次数
+        reps_match = re.search(r'(\d+)', parts[2])
+        if not reps_match:
+            return None
+        reps = int(reps_match.group(1))
+        
+        # 提取组数（默认1组）
+        sets = 1
+        if len(parts) > 3:
+            sets_match = re.search(r'(\d+)', parts[3])
+            if sets_match:
+                sets = int(sets_match.group(1))
+        
         return {
-            "success": True,
-            "type": "command",
-            "command": parsed.command,
-            "result": result,
-            "message": result.get("message", "处理完成")
-        }
-
-
-# ============ 指令处理器 ============
-
-async def handle_record(cmd: CommandResult, user_id: str) -> dict:
-    """
-    /记录 指令处理器
-    
-    格式: /记录 动作 重量 次数 组数
-    示例: /记录 卧推 60kg 10次 4组
-    """
-    args = cmd.args
-    
-    # 参数校验
-    if len(args) < 3:
-        return {
-            "success": False,
-            "message": "格式错误。正确格式:\n/记录 动作 重量 次数 [组数]\n例: /记录 卧推 60kg 10次 4组"
-        }
-    
-    # 解析参数
-    exercise = args[0]
-    
-    # 提取数字（支持 60kg, 60公斤, 60 等格式）
-    weight_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:kg|公斤)?', args[1])
-    reps_match = re.search(r'(\d+)\s*(?:次|个)?', args[2])
-    sets_match = re.search(r'(\d+)\s*(?:组|set)?', args[3]) if len(args) > 3 else None
-    
-    if not weight_match or not reps_match:
-        return {
-            "success": False,
-            "message": "无法解析重量或次数。请使用格式: 60kg 10次"
-        }
-    
-    weight = float(weight_match.group(1))
-    reps = int(reps_match.group(1))
-    sets = int(sets_match.group(1)) if sets_match else 1
-    
-    # 计算容量
-    total_volume = weight * reps * sets
-    
-    # TODO: 写入飞书表格
-    return {
-        "success": True,
-        "data": {
             "exercise": exercise,
             "weight": weight,
             "reps": reps,
             "sets": sets,
-            "total_volume": total_volume
-        },
-        "message": f"✅ 已记录: {exercise} {weight}kg × {reps}次 × {sets}组 = {total_volume}kg"
-    }
-
-
-async def handle_llm(cmd: CommandResult, user_id: str) -> dict:
-    """
-    /llm 指令处理器
-    调用 LLM 解析复杂输入
-    """
-    natural_text = " ".join(cmd.args)
+            "total_volume": weight * reps * sets
+        }
     
-    # TODO: 调用 LLM API 解析
-    # result = await llm_parser.parse(natural_text)
-    
-    return {
-        "success": True,
-        "data": {
-            "raw_text": natural_text,
-            "parsed_by": "llm"
-        },
-        "message": f"🤖 LLM 解析中: {natural_text[:50]}..."
-    }
+    def _help_response(self) -> AgentResponse:
+        """帮助信息"""
+        help_text = """
+🎯 健身助手指令
 
+📌 /记录 动作 重量 次数 [组数]
+   快速标准记录，直接写入飞书表格
+   例: /记录 卧推 60kg 10次 4组
 
-async def handle_today(cmd: CommandResult, user_id: str) -> dict:
-    """
-    /今天练什么 指令处理器
-    """
-    # TODO: 查询最近训练记录，AI生成建议
-    
-    body_part = cmd.args[0] if cmd.args else None
-    
-    return {
-        "success": True,
-        "data": {
-            "suggested_body_part": body_part or "根据历史自动推断",
-            "exercises": []
-        },
-        "message": "🎯 正在生成今日训练计划..."
-    }
+🤖 /llm [自然语言描述]
+   自由对话模式，AI 智能处理
+   例: /llm 今天练胸，先用60kg热身然后80kg正式组
+   例: /llm [图片] 识别这张训记截图
+   例: /llm 我肩膀有点疼，今天还能练推吗？
+   例: /llm 看看我最近卧推的趋势
 
+🎯 /今天练什么 [部位?]
+   AI 生成今日训练建议
+   例: /今天练什么 背
 
-async def handle_view(cmd: CommandResult, user_id: str) -> dict:
-    """
-    /查看 指令处理器
-    查询飞书表格记录
-    """
-    return {
-        "success": True,
-        "data": {
-            "query": cmd.args
-        },
-        "message": "📊 正在查询训练记录..."
-    }
+📋 /查看 [日期/动作?]
+   查询历史训练记录
+   例: /查看 昨天
+   例: /查看 卧推
 
-
-async def handle_help(cmd: CommandResult, user_id: str) -> dict:
-    """
-    /帮助 指令处理器
-    """
-    help_text = """
-🎯 健身助手指令列表
-
-📌 快速记录（推荐）
-/记录 动作 重量 次数 [组数]
-例: /记录 卧推 60kg 10次 4组
-例: /记录 深蹲 100公斤 5次 5组
-
-🤖 智能记录（复杂描述）
-/llm 自然语言描述
-例: /llm 今天练胸，先用60kg卧推热身，然后上重量到80kg做正式组
-
-📋 查看记录
-/查看 [日期/动作]
-例: /查看 昨天
-例: /查看 卧推
-
-🎯 训练建议
-/今天练什么 [部位]
-例: /今天练什么
-例: /今天练什么 背
-
-❓ 帮助
-/帮助 - 显示本帮助信息
+❓ /帮助
+   显示本帮助信息
 
 💡 提示
-- 重量支持: 60kg, 60公斤, 60
-- 次数支持: 10次, 10个, 10
-- 组数支持: 4组, 4set, 4
-    """
-    return {
-        "success": True,
-        "data": {},
-        "message": help_text
-    }
+- /记录 用于快速标准录入
+- /llm 用于复杂场景（OCR识别、伤病咨询、趋势分析等）
+        """
+        return AgentResponse(
+            success=True,
+            message=help_text,
+            data={},
+            actions=[]
+        )
 
 
-# 创建路由器实例
-def create_router() -> CommandRouter:
-    """创建并配置指令路由器"""
-    router = CommandRouter()
-    
-    router.register("/记录", handle_record)
-    router.register("/record", handle_record)  # 英文别名
-    router.register("/llm", handle_llm)
-    router.register("/今天练什么", handle_today)
-    router.register("/today", handle_today)  # 英文别名
-    router.register("/查看", handle_view)
-    router.register("/view", handle_view)  # 英文别名
-    router.register("/帮助", handle_help)
-    router.register("/help", handle_help)  # 英文别名
-    
-    return router
+# 全局路由器实例
+_router = None
+
+def get_router() -> CommandRouter:
+    """获取路由器单例"""
+    global _router
+    if _router is None:
+        _router = CommandRouter()
+    return _router
