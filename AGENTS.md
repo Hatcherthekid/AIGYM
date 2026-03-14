@@ -103,6 +103,32 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 → 不得标记为 doing
 ```
 
+#### Rule 4: 开发完必须更新 Checklist
+```
+触发条件：
+- 任何代码/文档开发完成
+- 任何任务状态变更（todo → doing → done）
+
+必须动作：
+→ 同步更新 docs/product/backlog.md
+   - 修改对应任务的状态列
+   - 确保状态真实反映进度（区分代码完成 vs 验证完成）
+
+→ 同步更新 docs/product/iteration-log.md
+   - 在 Done 或 Verification Pending 部分记录
+   - 明确区分：Code Complete / Verification Pending / Done
+
+禁止行为：
+- ❌ 代码写完就算"完成"
+- ❌ 忘记更新 backlog
+- ❌ 虚假标记 done（未验证）
+
+正确示例：
+✅ 代码完成 + 验证通过 → 标记 done
+🔄 代码完成 + 待验证 → 标记 doing，注明待验证项
+⏳ 仅计划/框架 → 标记 todo 或 doing
+```
+
 ### Rule 文件索引（读取顺序）
 
 | 优先级 | Rule 类型 | 文件路径 | 内容 |
