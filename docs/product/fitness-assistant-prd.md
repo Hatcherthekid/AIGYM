@@ -118,34 +118,44 @@
 
 ### 4.1 系统架构
 
-**目录结构（单仓库管理）：**
+**简化架构（kimi claw = LLM大脑，后端 = 工具）：**
+
 ```
-fitness-assistant/
-├── backend/                 # FastAPI后端服务
-│   ├── api/                 # REST API端点
-│   ├── models/              # SQLAlchemy模型
-│   ├── services/            # 业务逻辑
-│   │   ├── ai/              # AI角色（训练师/康复师）
-│   │   ├── parser.py        # 文本解析
-│   │   ├── ocr.py           # OCR识别
-│   │   └── feishu.py        # 飞书集成
-│   └── main.py              # 服务入口
-├── scripts/                 # 数据库初始化等脚本
-├── docs/                    # 项目文档
-└── docker-compose.yml       # 部署配置
+用户@飞书
+    ↓
+kimi claw (LLM)
+    ├── 理解指令 /记录 /查看 /今天练什么
+    ├── 解析自然语言 "卧推60kg×10次"
+    ├── OCR识别图片（自带）
+    ├── 生成训练建议
+    └── 调用后端API（function calling）
+                ↓
+        后端 (FastAPI)
+            ├── POST /records     # 写入一组
+            ├── GET /records      # 查询历史
+            ├── PUT /record/{id}  # 修改记录
+            └── DELETE /record/{id} # 删除
+                ↓
+        飞书多维表格（一行=一组）
 ```
 
-**数据流：**
+**目录结构（简化后）：**
 ```
-用户输入层              AI处理层                数据层                 展示层
-├─ 文本输入      ───→   意图识别    ───→     PostgreSQL    ───→    飞书多维表格
-├─ 截图(OCR)     ───→   信息提取    ───→     Redis缓存     ───→    飞书日历
-└─ 混合输入      ───→   角色路由    ───→     离线队列      ───→    飞书Dashboard
-                        ↓
-                    训练师/康复师（同一代码库）
-                        ↓
-                    结构化输出
+fitness-assistant/
+├── backend/
+│   ├── api/
+│   │   └── records.py       # 5个API端点
+│   ├── services/
+│   │   └── feishu.py        # 飞书表格读写封装
+│   └── main.py              # FastAPI入口
+└── docs/
+    └── kimi_claw_prompt.md  # kimi claw配置prompt
 ```
+
+**关键原则：**
+- **kimi claw = 大脑**：理解、决策、OCR、生成建议
+- **后端 = 手脚**：只读写飞书表格，无业务逻辑
+- **无需**：PostgreSQL、Redis、复杂Agent系统、独立OCR
 
 ### 4.2 关键流程
 
