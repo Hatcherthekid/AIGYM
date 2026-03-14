@@ -73,20 +73,20 @@
 3. 搭建FastAPI基础框架，实现/health端点
 4. 配置飞书Webhook接收端，完成验证
 
-### Code Complete 📝 (待验证)
+### Code Complete ✅ (已完成验证)
 - [x] P1-6：初始化项目目录结构（`fitness-assistant/` 目录树）→ **已推送到 GitHub**
-- [x] P1-3：搭建FastAPI基础框架（`main.py` + `/health` 端点）→ **代码完成，待启动测试**
-- [x] P1-2：创建训练记录表Schema（`models/training.py`）→ **模型定义完成，待建表**
-- [x] P1-1：初始化PostgreSQL数据库（`scripts/init_db.sql`）→ **脚本完成，待安装 PG**
-- [x] P1-4：配置飞书Webhook接收端（`api/webhooks.py`）→ **路由完成，待配置验证**
-- [x] P1-5：实现基础CRUD API（`api/training.py` 框架）→ **接口框架完成，待连数据库**
+- [x] P1-3：搭建FastAPI基础框架（`main.py` + `/health` 端点）→ **✅ 验证通过**
+- [x] P1-2：创建训练记录表Schema（`models/training.py`）→ **✅ 6个表已创建**
+- [x] P1-1：初始化PostgreSQL数据库（`scripts/init_db.sql`）→ **✅ 数据库就绪**
+- [x] P1-5：实现基础CRUD API（`api/training.py` 框架）→ **✅ CRUD全部测试通过**
+- [x] P1-4：配置飞书Webhook接收端（`api/webhooks.py`）→ **路由完成，待飞书配置验证**
 
 ### Verification Pending ⏳
-- [ ] 安装 PostgreSQL 并运行 `init_db.sql`
-- [ ] 配置数据库连接（SQLAlchemy session）
-- [ ] 实现真实的 CRUD 操作（替换 TODO）
-- [ ] 启动服务并测试 `/health` 端点
-- [ ] 配置飞书开发者后台并完成 Webhook 验证
+- [x] 安装 PostgreSQL 并运行 `init_db.sql` ✅
+- [x] 配置数据库连接（SQLAlchemy session）✅
+- [x] 实现真实的 CRUD 操作（替换 TODO）✅
+- [x] 启动服务并测试 `/health` 端点 ✅
+- [ ] 配置飞书开发者后台并完成 Webhook 验证（需飞书配置）
 
 ### Verification
 #### 代码检查（已完成）
@@ -96,15 +96,45 @@
 - [x] `cat scripts/init_db.sql` 包含所有建表语句
 - [x] `cat backend/api/webhooks.py` 包含Webhook处理器
 
-#### 功能验证（待完成）
-- [ ] `curl http://localhost:8000/health` 返回 `{"status": "ok"}`
-- [ ] `psql -d fitness -c "\dt"` 显示所有表
-- [ ] 飞书开发者控制台显示Webhook验证通过
+#### 功能验证
+- [x] `curl http://localhost:8000/health` 返回 `{"status": "ok"}` ✅
+- [x] `psql -d fitness -c "\dt"` 显示所有表 ✅
+- [ ] 飞书开发者控制台显示Webhook验证通过（需飞书配置）
 
 ### Next
-1. 安装 PostgreSQL 并初始化数据库
-2. 安装Python依赖并启动服务
-3. 测试健康检查端点
+1. 配置飞书开发者后台并完成 Webhook 验证（P1-4）
+2. 开始 Iteration 2：核心功能开发
+
+---
+
+## Iteration 1 补充记录：2026-03-14 验证完成
+
+### 本次完成
+- [x] P1-1: PostgreSQL 数据库安装 + 建表（6个表）
+- [x] P1-2: SQLAlchemy 模型定义 + database.py 配置
+- [x] P1-3: FastAPI 服务启动，/health 验证通过
+- [x] P1-5: 完整 CRUD API 实现 + 测试通过
+  - POST /logs - 创建记录
+  - GET /logs - 列表查询
+  - GET /logs/{id} - 单条查询
+  - PUT /logs/{id} - 更新（支持乐观锁）
+  - DELETE /logs/{id} - 删除
+  - GET /summary - 汇总统计
+
+### 验证记录
+```bash
+# 健康检查
+$ curl http://127.0.0.1:8000/health
+{"status":"ok","service":"fitness-assistant","version":"0.1.0"}
+
+# 创建测试记录
+$ curl -X POST /api/v1/training/logs -d '{...}'
+{"id": 1, "total_volume": 1160, "message": "训练记录已创建"}
+
+# 数据库验证
+$ psql -d fitness -c "\dt"
+6 rows: training_logs, training_sessions, exercise_pr, user_snapshot, sync_log, offline_queue
+```
 
 ### 阻塞项
 - 无
