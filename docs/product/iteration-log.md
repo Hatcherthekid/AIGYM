@@ -67,26 +67,46 @@
 - 新增任务 P1-6：初始化项目目录结构
 - 目录规划：`backend/` 含 `services/ai/` 子目录
 
+### 架构简化决策（2026-03-14）
+**背景**：飞书机器人(kimi claw)已具备多维表格操作能力
+
+**决策**：
+- **前期**：飞书多维表格 = 主数据库（MVP简化）
+- **后期（Iteration 3）**：考虑迁移到 PostgreSQL
+- **后端角色**：前期提供 AI 建议/计算，不存储主数据
+
+**影响**：
+- P1-1, P1-2 推迟到 Iteration 3
+- P1-4 Webhook 方案废除，改为飞书 API 直接操作
+- P1-5 CRUD 改为操作飞书表格而非 PostgreSQL
+
 ### Goal
 1. 完成项目目录结构搭建，可提交GitHub
 2. 完成PostgreSQL数据库搭建和Schema初始化
 3. 搭建FastAPI基础框架，实现/health端点
 4. 配置飞书Webhook接收端，完成验证
 
-### Code Complete ✅ (已完成验证)
+### Code Complete ✅ (Iteration 1 调整后)
 - [x] P1-6：初始化项目目录结构（`fitness-assistant/` 目录树）→ **已推送到 GitHub**
 - [x] P1-3：搭建FastAPI基础框架（`main.py` + `/health` 端点）→ **✅ 验证通过**
-- [x] P1-2：创建训练记录表Schema（`models/training.py`）→ **✅ 6个表已创建**
-- [x] P1-1：初始化PostgreSQL数据库（`scripts/init_db.sql`）→ **✅ 数据库就绪**
-- [x] P1-5：实现基础CRUD API（`api/training.py` 框架）→ **✅ CRUD全部测试通过**
-- [x] P1-4：配置飞书Webhook接收端（`api/webhooks.py`）→ **路由完成，待飞书配置验证**
+- [x] P1-5：实现基础CRUD API（`api/training.py` 框架）→ **✅ 本地数据库测试通过（后期改为飞书API）**
+
+### 推迟到 Iteration 3 ⏭️
+- P1-1：PostgreSQL 数据库（前期用飞书表格代替）
+- P1-2：SQLAlchemy Schema（后期需要时再启用）
+- P1-4：Webhook 方案废除（改为直接调用飞书 API）
 
 ### Verification Pending ⏳
-- [x] 安装 PostgreSQL 并运行 `init_db.sql` ✅
-- [x] 配置数据库连接（SQLAlchemy session）✅
-- [x] 实现真实的 CRUD 操作（替换 TODO）✅
+- [x] 搭建 FastAPI 框架 ✅
 - [x] 启动服务并测试 `/health` 端点 ✅
-- [ ] 配置飞书开发者后台并完成 Webhook 验证（需飞书配置）
+- [ ] 配置飞书机器人调用后端 API
+- [ ] 实现后端调用飞书 OpenAPI 读写表格
+
+### 架构变更说明
+前期技术栈调整：
+- **数据源**：PostgreSQL → 飞书多维表格
+- **后端角色**：数据存储 → AI 计算/建议服务
+- **同步方式**：Webhook 双向 → 机器人直接操作表格
 
 ### Verification
 #### 代码检查（已完成）
@@ -102,38 +122,48 @@
 - [ ] 飞书开发者控制台显示Webhook验证通过（需飞书配置）
 
 ### Next
-1. 配置飞书开发者后台并完成 Webhook 验证（P1-4）
-2. 开始 Iteration 2：核心功能开发
+1. 配置飞书机器人调用后端 API（新增任务）
+2. 实现后端调用飞书 OpenAPI 读写表格
+3. 开始 Iteration 2：核心功能开发
 
 ---
 
-## Iteration 1 补充记录：2026-03-14 验证完成
+## Iteration 1 补充记录：2026-03-14 验证完成 + 架构调整
 
 ### 本次完成
-- [x] P1-1: PostgreSQL 数据库安装 + 建表（6个表）
-- [x] P1-2: SQLAlchemy 模型定义 + database.py 配置
+- [x] P1-6: 项目目录结构，推送到 GitHub
 - [x] P1-3: FastAPI 服务启动，/health 验证通过
-- [x] P1-5: 完整 CRUD API 实现 + 测试通过
-  - POST /logs - 创建记录
-  - GET /logs - 列表查询
-  - GET /logs/{id} - 单条查询
-  - PUT /logs/{id} - 更新（支持乐观锁）
-  - DELETE /logs/{id} - 删除
-  - GET /summary - 汇总统计
+- [x] P1-5: 本地 CRUD API 实现 + 测试（后期改为飞书 API）
+
+### 架构调整（重大变更）
+**原因**：飞书机器人(kimi claw)已具备多维表格操作能力
+
+**变更前**：
+```
+用户 → 机器人 → 后端API → PostgreSQL ↔ 飞书表格（双向同步）
+```
+
+**变更后（MVP简化）**：
+```
+用户 → 机器人 → 直接读写飞书表格
+            ↓
+        可选调用后端API（AI建议/计算）
+```
+
+**推迟到 Iteration 3**：
+- PostgreSQL 数据库
+- SQLAlchemy ORM
+- Webhook 双向同步
 
 ### 验证记录
 ```bash
-# 健康检查
+# 健康检查 ✅
 $ curl http://127.0.0.1:8000/health
 {"status":"ok","service":"fitness-assistant","version":"0.1.0"}
 
-# 创建测试记录
+# 本地 CRUD 测试 ✅（PostgreSQL 版本，代码保留后期使用）
 $ curl -X POST /api/v1/training/logs -d '{...}'
 {"id": 1, "total_volume": 1160, "message": "训练记录已创建"}
-
-# 数据库验证
-$ psql -d fitness -c "\dt"
-6 rows: training_logs, training_sessions, exercise_pr, user_snapshot, sync_log, offline_queue
 ```
 
 ### 阻塞项

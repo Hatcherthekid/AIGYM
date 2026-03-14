@@ -15,10 +15,15 @@
 | P1-1 | 初始化PostgreSQL数据库 | `scripts/init_db.sql` | `psql -c "\dt"` 显示所有表 | P1-6 | ✅ done |
 | P1-2 | 创建训练记录表Schema | `backend/models/training.py` | 表结构符合Schema设计，有索引 | P1-1 | ✅ done |
 | P1-3 | 搭建FastAPI基础框架 | `backend/main.py` | `curl /health` 返回200 | P1-6 | ✅ done |
-| P1-4 | 配置飞书Webhook接收端 | `backend/api/webhooks.py` | 飞书控制台显示验证通过 | P1-3 | 🔄 doing |
+| P1-4 | ~~配置飞书Webhook接收端~~ | ~~`backend/api/webhooks.py`~~ | ~~飞书控制台显示验证通过~~ | ~~P1-3~~ | ⏭️ **deferred** |
 | P1-5 | 实现基础CRUD API | `backend/api/training.py` | Postman测试全部通过 | P1-2, P1-3 | ✅ done |
 
-**Iteration 1 Goal：** 完成项目目录搭建 + 数据库 + FastAPI框架 + Webhook验证
+**Iteration 1 Goal（已调整）：** 完成项目目录搭建 + FastAPI框架，数据库推迟到 Iteration 3
+
+**架构决策调整（2026-03-14）：**
+- **前期简化**：飞书多维表格作为主数据库，机器人直接操作
+- **PostgreSQL 推迟**：Iteration 3 再考虑数据迁移到本地数据库
+- **后端角色变化**：前期主要提供 AI 建议/计算服务，不存储主数据
 
 **架构决策：** 开发服务与AI角色（训练师/康复师）统一放在 `backend/services/ai/` 目录下管理，单仓库模式。
 
@@ -32,10 +37,10 @@
 |---|------|------|---------|------|------|
 | P2-1 | 实现文本输入解析 | `backend/services/parser.py` | "卧推4组60kg×10"正确解析为结构化数据 | 无 | todo |
 | P2-2 | 集成OCR识别 | `backend/services/ocr.py` | 5张截图准确率≥90% | Q1决策 | todo |
-| P2-3 | 实现飞书表格写入 | `backend/services/feishu.py` | 写入后表格可见，字段正确 | P1-5 | todo |
-| P2-4 | 实现飞书Webhook回写 | `backend/api/webhooks.py` | 表格编辑后数据库更新 | P1-4 | todo |
+| P2-3 | 实现飞书表格读写 | `backend/services/feishu.py` | 调用飞书API读写表格，字段正确 | P1-5 | todo |
+| P2-4 | ~~实现飞书Webhook回写~~ | ~~`backend/api/webhooks.py`~~ | ~~表格编辑后数据库更新~~ | ~~P1-4~~ | ⏭️ **deferred** |
 | P2-5 | 实现"今天练什么"AI | `backend/services/ai/trainer.py` | 返回含部位+动作+预估时间的训练单 | P2-6 | todo |
-| P2-6 | 实现用户状态快照 | `backend/services/snapshot.py` | 每次记录后自动更新 | P1-2 | todo |
+| P2-6 | 实现用户状态快照 | `backend/services/snapshot.py` | 从飞书表格读取计算用户状态 | P2-3 | todo |
 
 **阻塞项：**
 - P2-2 依赖 Q1（OCR方案）决策，需在 2026-03-20 前完成
