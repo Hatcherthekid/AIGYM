@@ -11,12 +11,12 @@
 
 | ID | 任务 | 入口 | 验收标准 | 依赖 | 状态 |
 |---|------|------|---------|------|------|
-| P1-6 | 初始化项目目录结构 | `fitness-assistant/` | 目录结构符合规范，可提交GitHub | 无 | todo |
-| P1-1 | 初始化PostgreSQL数据库 | `scripts/init_db.sql` | `psql -c "\dt"` 显示所有表 | P1-6 | todo |
-| P1-2 | 创建训练记录表Schema | `backend/models/training.py` | 表结构符合Schema设计，有索引 | P1-1 | todo |
-| P1-3 | 搭建FastAPI基础框架 | `backend/main.py` | `curl /health` 返回200 | P1-6 | todo |
-| P1-4 | 配置飞书Webhook接收端 | `backend/api/webhooks.py` | 飞书控制台显示验证通过 | P1-3 | todo |
-| P1-5 | 实现基础CRUD API | `backend/api/training.py` | Postman测试全部通过 | P1-2, P1-3 | todo |
+| P1-6 | 初始化项目目录结构 | `fitness-assistant/` | 目录结构符合规范，可提交GitHub | 无 | ✅ done |
+| P1-1 | 初始化PostgreSQL数据库 | `scripts/init_db.sql` | `psql -c "\dt"` 显示所有表 | P1-6 | 🔄 doing |
+| P1-2 | 创建训练记录表Schema | `backend/models/training.py` | 表结构符合Schema设计，有索引 | P1-1 | 🔄 doing |
+| P1-3 | 搭建FastAPI基础框架 | `backend/main.py` | `curl /health` 返回200 | P1-6 | 🔄 doing |
+| P1-4 | 配置飞书Webhook接收端 | `backend/api/webhooks.py` | 飞书控制台显示验证通过 | P1-3 | 🔄 doing |
+| P1-5 | 实现基础CRUD API | `backend/api/training.py` | Postman测试全部通过 | P1-2, P1-3 | 🔄 doing |
 
 **Iteration 1 Goal：** 完成项目目录搭建 + 数据库 + FastAPI框架 + Webhook验证
 

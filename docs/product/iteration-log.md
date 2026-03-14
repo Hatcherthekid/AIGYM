@@ -73,28 +73,33 @@
 3. 搭建FastAPI基础框架，实现/health端点
 4. 配置飞书Webhook接收端，完成验证
 
-### Done ✅
-- [x] P1-6：初始化项目目录结构（`fitness-assistant/` 目录树）
-- [x] P1-3：搭建FastAPI基础框架（`main.py` + `/health` 端点）
-- [x] P1-2：创建训练记录表Schema（`models/training.py`）
-- [x] P1-1：初始化PostgreSQL数据库（`scripts/init_db.sql`）
-- [x] P1-4：配置飞书Webhook接收端（`api/webhooks.py`）
-- [x] P1-5：实现基础CRUD API（`api/training.py` 框架）
+### Code Complete 📝 (待验证)
+- [x] P1-6：初始化项目目录结构（`fitness-assistant/` 目录树）→ **已推送到 GitHub**
+- [x] P1-3：搭建FastAPI基础框架（`main.py` + `/health` 端点）→ **代码完成，待启动测试**
+- [x] P1-2：创建训练记录表Schema（`models/training.py`）→ **模型定义完成，待建表**
+- [x] P1-1：初始化PostgreSQL数据库（`scripts/init_db.sql`）→ **脚本完成，待安装 PG**
+- [x] P1-4：配置飞书Webhook接收端（`api/webhooks.py`）→ **路由完成，待配置验证**
+- [x] P1-5：实现基础CRUD API（`api/training.py` 框架）→ **接口框架完成，待连数据库**
 
-### Not done
-- 数据库实际安装和连接测试
-- API与数据库的实际集成
-- 飞书Webhook实际验证
+### Verification Pending ⏳
+- [ ] 安装 PostgreSQL 并运行 `init_db.sql`
+- [ ] 配置数据库连接（SQLAlchemy session）
+- [ ] 实现真实的 CRUD 操作（替换 TODO）
+- [ ] 启动服务并测试 `/health` 端点
+- [ ] 配置飞书开发者后台并完成 Webhook 验证
 
 ### Verification
+#### 代码检查（已完成）
 - [x] `ls fitness-assistant/` 显示完整目录结构
 - [x] `cat backend/main.py` 包含 `/health` 端点
 - [x] `cat backend/models/training.py` 包含5个数据模型
 - [x] `cat scripts/init_db.sql` 包含所有建表语句
 - [x] `cat backend/api/webhooks.py` 包含Webhook处理器
-- [ ] `curl http://localhost:8000/health` 返回 `{"status": "ok"}` ⏳ 待测试
-- [ ] `psql -d fitness -c "\dt"` 显示所有表 ⏳ 待测试
-- [ ] 飞书开发者控制台显示Webhook验证通过 ⏳ 待配置
+
+#### 功能验证（待完成）
+- [ ] `curl http://localhost:8000/health` 返回 `{"status": "ok"}`
+- [ ] `psql -d fitness -c "\dt"` 显示所有表
+- [ ] 飞书开发者控制台显示Webhook验证通过
 
 ### Next
 1. 安装 PostgreSQL 并初始化数据库
