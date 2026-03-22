@@ -1,6 +1,7 @@
 """
-训练记录数据模型
-SQLAlchemy ORM Models
+Future ORM models for a later backendized version.
+
+These models are retained as a migration target, not the current Feishu MVP truth.
 """
 
 from sqlalchemy import (
@@ -15,7 +16,7 @@ Base = declarative_base()
 
 
 class TrainingLog(Base):
-    """训练记录表 - 每次动作一条记录"""
+    """Future training log entity."""
     __tablename__ = "training_logs"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -41,7 +42,7 @@ class TrainingLog(Base):
 
 
 class TrainingSession(Base):
-    """训练日汇总表 - 一天一条记录"""
+    """Future training session entity."""
     __tablename__ = "training_sessions"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -59,7 +60,7 @@ class TrainingSession(Base):
 
 
 class ExercisePR(Base):
-    """动作PR追踪表 - 自动维护"""
+    """Future exercise PR entity."""
     __tablename__ = "exercise_pr"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -74,7 +75,7 @@ class ExercisePR(Base):
 
 
 class UserSnapshot(Base):
-    """用户状态快照 - 供AI快速读取"""
+    """Future user snapshot entity."""
     __tablename__ = "user_snapshot"
     
     id = Column(Integer, primary_key=True, default=1)  # 只有一条记录
@@ -89,7 +90,7 @@ class UserSnapshot(Base):
 
 
 class SyncLog(Base):
-    """同步日志 - 用于故障排查"""
+    """Future sync log entity."""
     __tablename__ = "sync_log"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -103,7 +104,7 @@ class SyncLog(Base):
 
 
 class OfflineQueue(Base):
-    """离线队列 - 断线后批量同步"""
+    """Future offline queue entity."""
     __tablename__ = "offline_queue"
     
     id = Column(Integer, primary_key=True, autoincrement=True)

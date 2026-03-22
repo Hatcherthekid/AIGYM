@@ -1,6 +1,8 @@
 """
-Fitness Assistant - FastAPI Backend
-个人健身数据中枢后端服务
+Future backend adapter entrypoint.
+
+This FastAPI app is retained as a skeleton for a later backendized version.
+It is not the current source of truth for the Feishu MVP runtime.
 """
 
 from fastapi import FastAPI, HTTPException, Depends
@@ -23,7 +25,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Fitness Assistant API",
-    description="个人健身数据中枢 - 训练记录、AI建议、飞书同步",
+    description="Future adapter layer for a later backendized AIGYM runtime",
     version="0.1.0",
     lifespan=lifespan
 )

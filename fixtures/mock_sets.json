@@ -1,0 +1,22 @@
+[
+  {
+    "set_id": "set_001",
+    "session_id": "20260322-UPPER-001",
+    "exercise_name": "高位下拉",
+    "set_index": 1,
+    "weight": 26,
+    "reps": 10,
+    "rpe": 7,
+    "status": "active"
+  },
+  {
+    "set_id": "set_002",
+    "session_id": "20260322-UPPER-001",
+    "exercise_name": "引体向上",
+    "set_index": 1,
+    "weight": 0,
+    "reps": 8,
+    "rpe": 8,
+    "status": "active"
+  }
+]

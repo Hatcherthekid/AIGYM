@@ -1,0 +1,16 @@
+[
+  {
+    "session_id": "20260321-PULL-001",
+    "date": "2026-03-21",
+    "status": "completed",
+    "focus": "pull",
+    "goal": "upper back strength"
+  },
+  {
+    "session_id": "20260322-UPPER-001",
+    "date": "2026-03-22",
+    "status": "active",
+    "focus": "upper",
+    "goal": "upper hypertrophy with shoulder rehab"
+  }
+]

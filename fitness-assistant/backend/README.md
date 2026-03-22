@@ -1,82 +1,35 @@
-# 健身助手后端服务
+# Backend Skeleton
 
-## 快速开始
+这个目录当前不是飞书 MVP 的线上主实现。
 
-### 1. 安装依赖
+当前定位：
 
-```bash
-cd backend
-pip install -r requirements.txt
-```
+- 未来独立后端 / 独立记录器 App 的适配层骨架
+- 仓库内协议与命名参考实现
+- 为后续迁移飞书真相层提供落点
 
-### 2. 配置环境变量
+当前不应把这里理解为：
 
-```bash
-cp .env.example .env
-# 编辑 .env 填入飞书配置
-```
+- 线上主数据库实现
+- 当前 OpenClaw 真实运行逻辑
+- 当前飞书同步系统
 
-### 3. 初始化数据库
+## 当前建议关注
 
-```bash
-# 创建数据库
-psql -U postgres -c "CREATE DATABASE fitness;"
+- `services/command_router.py`
+  - 任务型 skill 路由参考
+- `services/projection_flow.py`
+  - 系统内置提交/投影流程参考
+- `api/training.py`
+  - 未来训练 API 草图
+- `api/webhooks.py`
+  - 未来事件接入草图
 
-# 执行初始化脚本
-psql -U postgres -d fitness -f ../scripts/init_db.sql
-```
+## 当前设计真相
 
-### 4. 启动服务
+请优先阅读：
 
-```bash
-# 开发模式
-uvicorn main:app --reload
-
-# 生产模式
-python main.py
-```
-
-### 5. 验证
-
-```bash
-# 健康检查
-curl http://localhost:8000/health
-
-# API文档
-open http://localhost:8000/docs
-```
-
-## API 端点
-
-| 端点 | 方法 | 说明 |
-|-----|------|------|
-| `/health` | GET | 健康检查 |
-| `/api/v1/training/logs` | POST | 创建训练记录 |
-| `/api/v1/training/logs` | GET | 查询训练记录 |
-| `/api/v1/training/logs/{id}` | GET | 获取单条记录 |
-| `/api/v1/training/logs/{id}` | PUT | 更新记录 |
-| `/api/v1/training/logs/{id}` | DELETE | 删除记录 |
-| `/api/v1/training/summary` | GET | 训练汇总 |
-| `/api/v1/webhooks/feishu` | POST | 飞书Webhook |
-
-## 目录结构
-
-```
-backend/
-├── api/
-│   ├── training.py      # 训练记录API
-│   └── webhooks.py      # 飞书Webhook
-├── models/
-│   └── training.py      # SQLAlchemy模型
-├── services/
-│   ├── ai/              # AI角色
-│   │   ├── trainer.py   # 训练师
-│   │   ├── rehab.py     # 康复师
-│   │   └── router.py    # 角色路由
-│   ├── parser.py        # 文本解析
-│   ├── ocr.py           # OCR识别
-│   └── feishu.py        # 飞书集成
-├── main.py              # 服务入口
-├── requirements.txt     # 依赖
-└── .env.example         # 环境变量模板
-```
+- `docs/product/fitness-assistant-prd.md`
+- `docs/product/training-agent-skill-design.md`
+- `prompts/`
+- `schemas/`

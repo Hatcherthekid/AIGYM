@@ -1,0 +1,22 @@
+[
+  {
+    "artifact_id": "artifact_001",
+    "artifact_type": "image",
+    "import_status": "pending_review",
+    "source_label": "训记截图",
+    "candidates": [
+      {
+        "exercise_name": "高位下拉",
+        "weight": 26,
+        "reps": 10,
+        "confidence": 0.91
+      },
+      {
+        "exercise_name": "卧推",
+        "weight": 80,
+        "reps": 8,
+        "confidence": 0.32
+      }
+    ]
+  }
+]

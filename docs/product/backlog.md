@@ -1,178 +1,41 @@
-# 健身助手 Backlog
+# 健身训练 Agent Backlog
 
-> 遵循：`rules/dev/iteration_and_pm.md`
-> 每个条目必须可执行 + 可验收（入口 + 预期结果）
+> 更新：2026-03-22  
+> 原则：仓库文档优先，飞书/OpenClaw 后台配置随后对齐
 
----
+## Now
 
-## Now（当前迭代 - Iteration 1）
+| ID | 任务 | 入口 | 验收标准 | 状态 |
+|---|---|---|---|---|
+| N1 | 统一产品与架构文档真相 | `docs/product/fitness-assistant-prd.md`, `docs/ARCHITECTURE_SIMPLE.md`, `docs/fitness-system-architecture.md`, `docs/GITHUB_README.md` | 全部采用飞书 MVP + 可迁移训练内核口径 | done |
+| N2 | 重写训练 skill 设计稿 | `docs/product/training-agent-skill-design.md` | 包含 9 个 skills、核心对象、图片导入约束 | done |
+| N3 | 新增 router 与 skill prompts | `prompts/**` | router + 9 个 skill prompt 文件存在，内容独立 | done |
+| N4 | 新增 schema 资产 | `schemas/**` | 核心对象与 skill I/O schema 可读可复用 | done |
+| N5 | 新增 fixtures 资产 | `fixtures/**` | 至少包含真实对话样例、mock sessions、mock sets、图片导入候选 | done |
+| N6 | 重定位 backend 骨架 | `fitness-assistant/backend/**` | README、router、API 文件明确为未来适配层/参考实现 | done |
+| N7 | 线上配置对齐审计 | 飞书 / OpenClaw 后台 | 列出仓库与线上配置差异清单 | todo |
+| N8 | Skill 与提交投影层分离 | `docs/product/training-agent-skill-design.md`, `schemas/skill-io.md`, `docs/reference/feishu-mapping.md` | 明确主真相表、投影表、系统内置提交流程 | done |
+| N9 | 补批量导入能力设计 | `prompts/skills/bulk_ingest_workout.md`, `fixtures/bulk_ingest_candidates.json` | 新增 `bulk_ingest_workout` prompt 和批量导入 fixture | done |
+| N10 | 补系统提交/投影参考骨架 | `fitness-assistant/backend/services/projection_flow.py` | 存在 commit / projection / pending_sync 参考流程 | done |
+| N11 | 输出 OpenClaw 更新执行文档 | `docs/product/openclaw-update-playbook.md` | 能直接指导后台按仓库定义更新 router / skills / 映射规则 | done |
 
-### Phase 1：基础设施（2026-03-13 至 2026-03-20）
+## Next
 
-| ID | 任务 | 入口 | 验收标准 | 依赖 | 状态 |
-|---|------|------|---------|------|------|
-| P1-6 | 初始化项目目录结构 | `fitness-assistant/` | 目录结构符合规范，可提交GitHub | 无 | ✅ done |
-| P1-1 | 初始化PostgreSQL数据库 | `scripts/init_db.sql` | `psql -c "\dt"` 显示所有表 | P1-6 | ✅ done |
-| P1-2 | 创建训练记录表Schema | `backend/models/training.py` | 表结构符合Schema设计，有索引 | P1-1 | ✅ done |
-| P1-3 | 搭建FastAPI基础框架 | `backend/main.py` | `curl /health` 返回200 | P1-6 | ✅ done |
-| P1-4 | ~~配置飞书Webhook接收端~~ | ~~`backend/api/webhooks.py`~~ | ~~飞书控制台显示验证通过~~ | ~~P1-3~~ | ⏭️ **deferred** |
-| P1-5 | 实现基础CRUD API | `backend/api/training.py` | Postman测试全部通过 | P1-2, P1-3 | ✅ done |
+| ID | 任务 | 入口 | 验收标准 | 状态 |
+|---|---|---|---|---|
+| X1 | 实现 `start_session` 真实配置 | OpenClaw skill 配置 | 能创建/更新 active session | todo |
+| X2 | 实现 `log_set` 真实配置 | OpenClaw skill 配置 | 文本记录能稳定落到 set 级对象 | todo |
+| X3 | 实现 `amend_set` 真实配置 | OpenClaw skill 配置 | 修改/删除一组可精确命中 | todo |
+| X4 | 图片导入确认流程 | 飞书卡片 + skill | 图片不能直接入库，必须确认 | todo |
+| X5 | `swap_exercise` / `suggest_next_set` | OpenClaw skills | 能基于约束和历史给训练中调整 | todo |
+| X6 | 按执行文档更新 OpenClaw 后台 | `docs/product/openclaw-update-playbook.md` | Router 和 4 个核心 skill 与仓库定义一致 | todo |
 
-**Iteration 1 Goal（已调整）：** 完成项目目录搭建 + FastAPI框架，数据库推迟到 Iteration 3
+## Later
 
-**架构决策调整（2026-03-14）：**
-- **前期简化**：飞书多维表格作为主数据库，机器人直接操作
-- **PostgreSQL 推迟**：Iteration 3 再考虑数据迁移到本地数据库
-- **后端角色变化**：前期主要提供 AI 建议/计算服务，不存储主数据
-
-**架构决策：** 开发服务与AI角色（训练师/康复师）统一放在 `backend/services/ai/` 目录下管理，单仓库模式。
-
----
-
-
-## Next（下个迭代 - Iteration 2）
-
-### Phase 2：核心功能（计划：2026-03-20 至 2026-04-03）
-
-**架构简化（关键变更）：**
-
-基于 kimi claw 本身就是 LLM，后端只保留**飞书表格操作工具**：
-
-```
-kimi claw (LLM大脑)
-    ├── 理解指令 /记录 /查看 /今天练什么
-    ├── 解析自然语言 "卧推60kg×10次"
-    ├── OCR识别图片（自带能力）
-    ├── 生成训练建议
-    └── 调用后端API读写飞书表格
-
-后端 (工具层)
-    ├── POST /records     # 写入一组
-    ├── GET /records      # 查询历史
-    ├── PUT /record/{id}  # 修改记录
-    └── DELETE /record/{id} # 删除记录
-```
-
-| ID | 任务 | 入口 | 验收标准 | 依赖 | 状态 |
-|---|------|------|---------|------|------|
-| ~~P2-1~~ | ~~指令路由系统~~ | ~~删除~~ | ~~kimi claw 直接处理~~ | ~~无~~ | ~~cancelled~~ |
-| ~~P2-2~~ | ~~OCR集成~~ | ~~删除~~ | ~~kimi claw 自带~~ | ~~Q1~~ | ~~cancelled~~ |
-| **P2-3** | **飞书表格读写API** | `api/records.py` | 5个端点：增删改查统计 | 无 | todo |
-| ~~P2-4~~ | ~~Webhook回写~~ | ~~删除~~ | ~~不需要~~ | ~~P1-4~~ | ~~cancelled~~ |
-| **P2-5** | **kimi claw配置** | `docs/kimi_claw_prompt.md` | 写好prompt，配置function calling | P2-3 | todo |
-| **P2-6** | **端到端测试** | - | 从飞书发指令到数据写入表格 | P2-5 | todo |
-
-#### 后端 API（极简5个端点）
-
-| 端点 | 功能 | kimi claw 调用时机 |
-|-----|------|-------------------|
-| `POST /records` | 写入一组记录 | 用户说"/记录卧推60kg" |
-| `GET /records` | 查询历史 | 用户说"/查看昨天" |
-| `PUT /record/{id}` | 修改指定组 | 用户说"/修改第3组重量" |
-| `DELETE /record/{id}` | 删除单组 | 用户说"/删除最后一组" |
-| `GET /stats` | 统计汇总 | 生成计划前查历史 |
-
-#### 数据模型（飞书表格：一行=一组）
-
-| 日期 | 训练日ID | 动作 | 组号 | 重量 | 次数 | RPE | 组类型 | 备注 | 容量 |
-|-----|---------|------|------|------|------|-----|--------|------|------|
-| 3/14 | 20260314-PUSH | 卧推 | 1 | 60 | 12 | 6 | 热身 | | 720 |
-| 3/14 | 20260314-PUSH | 卧推 | 2 | 80 | 8 | 7 | 热身 | | 640 |
-
-#### kimi claw 配置要点
-
-**Prompt 配置：** 教识别指令、定义 function calling
-**Functions：** 配好5个API端点
-
-**交互示例：**
-```
-用户: /记录 卧推 60kg 10次×4组
-kimi claw: 
-  1. 解析参数
-  2. 循环调用 POST /records 4次
-  3. 汇总回复：✅ 已记录卧推4组，总容量2400kg
-```
-
-**阻塞项：** 无
-
-
-#### 表格视图设计
-
-1. **逐组明细**（主表，机器人写入）
-2. **动作汇总**（公式自动计算，按动作分组）
-3. **今日计划**（AI生成，训练前可编辑）
-4. **历史趋势**（图表，1RM/容量变化）
-
-#### 编辑权限设计
-- **机器人独占写入**：表格对用户只读，只能通过指令修改
-- **今日计划例外**：AI生成后，用户在训练前可通过表格直接编辑
-- **训练开始后锁定**：防止误改历史
-
----
-
-## Later（后续迭代）
-
-### Phase 3：增强功能（计划：Iteration 3）
-
-| ID | 任务 | 入口 | 验收标准 | 依赖 |
-|---|------|------|---------|------|
-| P3-1 | 集成飞书日历 | `services/feishu_calendar.py` | 创建事件后日历可见 | P2-3 |
-| P3-2 | Dashboard图表 | 飞书表格自带 | 显示容量趋势图、部位分布图 | P2-3 |
-| ~~P3-3~~ | ~~离线队列~~ | ~~删除~~ | ~~飞书本身支持~~ | ~~取消~~ |
-| P3-4 | 周报自动生成 | `services/weekly_report.py` | 周日生成飞书文档 | P2-6 |
-| ~~P3-5~~ | ~~冲突解决UI~~ | ~~删除~~ | ~~只能机器人写，无冲突~~ | ~~取消~~ |
-
-### Phase 4：角色AI（计划：Iteration 4）
-
-| ID | 任务 | 入口 | 验收标准 | 依赖 |
-|---|------|------|---------|------|
-| P4-1 | 训练师Prompt | `docs/prompts/trainer.md` | kimi claw 生成可执行周计划 | 无 |
-| P4-2 | 康复师Prompt | `docs/prompts/rehab.md` | kimi claw 给伤病建议 | 无 |
-| ~~P4-3~~ | ~~角色路由~~ | ~~删除~~ | ~~kimi claw 直接处理~~ | ~~取消~~ |
-| P4-4 | 动作替代推荐 | `docs/prompts/substitution.md` | 输入限制，输出替代方案 | P4-1 |
-
-### Phase 5：优化与文档（计划：Iteration 5）
-
-| ID | 任务 | 入口 | 验收标准 | 依赖 |
-|---|------|------|---------|------|
-| P5-1 | API文档 | `docs/api/README.md` | 5个端点含请求/响应示例 | P1-5 |
-| P5-2 | 部署文档 | `docs/deployment.md` | 新环境可按文档部署 | P5-1 |
-| P5-3 | 性能测试 | - | API P95 < 500ms | P2-5 |
-| P5-4 | 用户反馈收集 | `docs/feedback/` | 记录5条使用反馈 | P5-2 |
-
----
-
-## 待决策阻塞项
-
-| ID | 问题 | 决策期限 | 状态 |
-|---|------|---------|------|
-| ~~Q1~~ | ~~OCR方案选型？~~ | ~~2026-03-20~~ | ~~✅ 取消，LLM自带~~ |
-| Q2 | 是否需要本地SQLite离线缓存？ | 2026-03-25 | 待定 |
-| Q3 | 周报生成时机（周日/周一） | 2026-03-30 | 待定 |
-| Q4 | 逐组记录 vs 动作汇总？ | 2026-03-15 | ✅ 已决策：逐组记录 |
-| Q5 | 表格编辑权限？ | 2026-03-15 | ✅ 已决策：只能机器人修改 |
-
----
-
-## 已完成 ✅
-
-| ID | 任务 | 完成日期 | 产物 |
-|---|------|---------|------|
-| I0-1 | 项目文档结构 | 2026-03-13 | `docs/product/` |
-| I0-2 | PRD | 2026-03-13 | `fitness-assistant-prd.md` |
-| I0-3 | 架构文档 | 2026-03-13 | `fitness-system-architecture.md` |
-| I0-4 | Backlog | 2026-03-13 | `backlog.md` |
-| I0-5 | 迭代日志 | 2026-03-13 | `iteration-log.md` |
-| I0-6 | 决策记录 | 2026-03-13 | `decisions.md` |
-| I1-1 | FastAPI框架 | 2026-03-14 | `main.py` + `/health` |
-
----
-
-## 变更日志
-
-| 日期 | 变更 |
-|-----|------|
-| 2026-03-13 | 初始版本 |
-| 2026-03-14 | 架构调整：飞书表格为主数据库，推迟PostgreSQL |
-| 2026-03-14 | 架构简化：kimi claw直接处理LLM，后端只保留飞书API工具 |
-
+| ID | 任务 | 入口 | 验收标准 | 状态 |
+|---|---|---|---|---|
+| L1 | 飞书日历映射 | 飞书日历 | session 级训练安排可同步 | todo |
+| L2 | Session summary 文档输出 | 飞书文档 | 每次训练结束能生成短复盘 | todo |
+| L3 | 训练周边决策 skills 完整化 | `pre_workout_decision`, `conditioning_protocol_adjust` | 高饥饿场景和有氧协议场景可稳定运行 | todo |
+| L4 | 独立记录器 App 内核梳理 | docs / schema | 形成 App 可复用的接口与状态机 | todo |
+| L5 | 后端主库迁移评估 | `fitness-assistant/backend/` | 明确从飞书真相层迁出条件 | todo |

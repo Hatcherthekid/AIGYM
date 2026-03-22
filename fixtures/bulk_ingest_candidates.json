@@ -1,0 +1,39 @@
+[
+  {
+    "source_artifact_id": "artifact_bulk_001",
+    "artifact_type": "image",
+    "import_status": "pending_review",
+    "confirmation_mode": "per_exercise",
+    "candidate_entries": [
+      {
+        "exercise_name": "高位下拉",
+        "sets": [
+          {"weight": 26, "reps": 10, "confidence": 0.94},
+          {"weight": 26, "reps": 10, "confidence": 0.92}
+        ]
+      },
+      {
+        "exercise_name": "坐姿划船",
+        "sets": [
+          {"weight": 35, "reps": 12, "confidence": 0.89},
+          {"weight": 35, "reps": 12, "confidence": 0.88}
+        ]
+      }
+    ]
+  },
+  {
+    "source_artifact_id": "artifact_bulk_002",
+    "artifact_type": "image",
+    "import_status": "pending_review",
+    "confirmation_mode": "per_exercise",
+    "candidate_entries": [
+      {
+        "exercise_name": "卧推",
+        "sets": [
+          {"weight": 100, "reps": 5, "confidence": 0.28}
+        ],
+        "warning": "Current focus appears to be shoulder rehab / pull, candidate likely hallucinated."
+      }
+    ]
+  }
+]
